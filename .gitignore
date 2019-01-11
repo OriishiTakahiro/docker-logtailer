@@ -1,2 +1,5 @@
-/vendor
+tail-clog
+/*vendor*
+/log
 .containerid
+!.gitkeep

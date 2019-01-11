@@ -1,86 +1,79 @@
 package main
 
 import (
-	"context"
-	"docker.io/go-docker"
-	"docker.io/go-docker/api/types"
-	"docker.io/go-docker/api/types/container"
-	"docker.io/go-docker/api/types/network"
 	"fmt"
-	"io"
+	"io/ioutil"
+	"log"
+	"os"
+	"time"
 )
 
-func init() {
-}
+const (
+	cidPath = "./.containerid"
+)
 
 func main() {
 
-	ctx := context.Background()
-
-	cli, err := docker.NewEnvClient()
+	// For saving messages which received from containers
+	rowLogFile, err := os.OpenFile("./log/"+time.Now().Format("2006-01-02-15-04-05-rows.log"), os.O_CREATE, 0666)
 	if err != nil {
-		panic(err)
+		log.Fatalln(err)
 	}
+	defer rowLogFile.Close()
+	rowLogger := log.New(rowLogFile, "", log.Ltime)
 
-	containerConfig := container.Config{
-		Tty:          true,
-		Cmd:          []string{"ping", "-c", "4", "8.8.8.8"},
-		Image:        "centos",
-		AttachStdin:  true,
-		AttachStdout: true,
-		AttachStderr: true,
-	}
-
-	cBody, err := cli.ContainerCreate(
-		ctx,
-		&containerConfig,
-		&container.HostConfig{},
-		&network.NetworkingConfig{},
-		"practice-container",
-	)
-	defer cli.ContainerRemove(ctx, cBody.ID, types.ContainerRemoveOptions{})
+	// For saving messages which show to the user
+	msgLogFile, err := os.OpenFile("./log/"+time.Now().Format("2006-01-02-15-04-05-msg.log"), os.O_CREATE, 0666)
 	if err != nil {
-		panic(err)
+		log.Fatalln(err)
 	}
+	defer msgLogFile.Close()
+	msgLogger := log.New(msgLogFile, "", log.Ltime)
 
-	if err := cli.ContainerStart(ctx, cBody.ID, types.ContainerStartOptions{}); err != nil {
-		panic(err)
-	}
-
-	statusCh, errCh := cli.ContainerWait(ctx, cBody.ID, container.WaitConditionNotRunning)
-	select {
-	case err := <-errCh:
-		if err != nil {
-			panic(err)
-		}
-	case <-statusCh:
-	}
-
-	logOptions := types.ContainerLogsOptions{
-		ShowStdout: true,
-		ShowStderr: true,
-		Timestamps: true,
-		Follow:     true,
-		Details:    true,
-	}
-	readCloser, err := cli.ContainerLogs(ctx, cBody.ID, logOptions)
-	defer readCloser.Close()
+	// Read container's id
+	byteCID, err := ioutil.ReadFile(cidPath)
 	if err != nil {
-		panic(err)
+		log.Fatalln(err)
 	}
 
-	buff := make([]byte, 256)
+	cid := string(byteCID)
+	cLogFile := "/var/lib/docker/containers/" + cid + "/" + cid + "-json.log"
+
+	// Channels
+	msgChan := make(chan string)
+	errChan := make(chan error)
+
+	// Start tailing container's log file
+	go tailFile(msgChan, errChan, cLogFile)
+
 	for {
-		_, err := readCloser.Read(buff)
-		fmt.Printf("%s", string(buff))
-		if err == io.EOF {
-			break
+		select {
+
+		// firing when recived message
+		case logMsg := <-msgChan:
+
+			row, err := parseLog(logMsg)
+			if err != nil {
+				fmt.Println(err)
+				continue
+			}
+
+			rowLogger.Println(row)
+
+			msg, hasMsg := generateMsg(row)
+			if hasMsg {
+				msgLogger.Println(msg)
+				fmt.Println(msg)
+			}
+
+		// firing when recived error
+		case err := <-errChan:
+			log.Fatalln(err)
+
+		// firing when received nothing
+		default:
+			time.Sleep(500 * time.Millisecond)
 		}
 	}
 
-	fmt.Printf("%s %v\n", cBody.ID[:10], cBody.Warnings)
-
-}
-
-func startContainer(ctx context.Context) (containerID int, err error) {
 }

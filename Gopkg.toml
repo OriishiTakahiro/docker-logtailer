@@ -26,8 +26,8 @@
 
 
 [[constraint]]
-  name = "docker.io/go-docker"
-  version = "1.0.0"
+  branch = "master"
+  name = "github.com/hpcloud/tail"
 
 [prune]
   go-tests = true
