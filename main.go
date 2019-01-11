@@ -15,7 +15,7 @@ const (
 func main() {
 
 	// For saving messages which received from containers
-	rowLogFile, err := os.OpenFile("./log/"+time.Now().Format("2006-01-02-15-04-05-rows.log"), os.O_CREATE, 0666)
+	rowLogFile, err := os.OpenFile("./log/"+time.Now().Format("2006-01-02-15-04-05-rows.log"), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0666)
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -23,7 +23,7 @@ func main() {
 	rowLogger := log.New(rowLogFile, "", log.Ltime)
 
 	// For saving messages which show to the user
-	msgLogFile, err := os.OpenFile("./log/"+time.Now().Format("2006-01-02-15-04-05-msg.log"), os.O_CREATE, 0666)
+	msgLogFile, err := os.OpenFile("./log/"+time.Now().Format("2006-01-02-15-04-05-msgs.log"), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0666)
 	if err != nil {
 		log.Fatalln(err)
 	}
