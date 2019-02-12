@@ -9,7 +9,8 @@ import (
 )
 
 const (
-	cidPath = "./.containerid"
+	cidPath            = "./.containerid"
+	msgRefleshInterval = 500 // millisec
 )
 
 func main() {
@@ -57,7 +58,6 @@ func main() {
 				fmt.Println(err)
 				continue
 			}
-
 			rowLogger.Println(row)
 
 			msg, hasMsg := generateMsg(row)
@@ -72,7 +72,7 @@ func main() {
 
 		// firing when received nothing
 		default:
-			time.Sleep(500 * time.Millisecond)
+			time.Sleep(msgRefleshInterval * time.Millisecond)
 		}
 	}
 

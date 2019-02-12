@@ -1,0 +1,57 @@
+@startuml{sequence.png}
+
+actor "ユーザ" as user
+participant "activate-container.sh" as ac
+participant "docker daemon" as docker
+participant "docker container" as dockerc
+participant "docker's log file" as dockerl
+participant "containerid" as cid
+participant "main()" as main
+participant "tailFile()" as tailFile
+participant "generateMsg()" as gmsg
+
+group Container Activation
+  activate docker
+  user-> ac : スクリプトの実行
+  activate ac
+  ac -> docker : コンテナの実行
+  docker -> dockerc : コンテナ起動
+  activate dockerc
+  docker -> dockerl : ファイル生成
+  activate dockerl
+  docker -> cid : ファイル生成
+  activate cid
+  deactivate ac
+end
+
+group Tool Running
+  user-> main : プログラムの起動
+  activate main
+  main -> cid : ファイル読み取り
+  main <-- cid : コンテナID
+  main -> tailFile : ログファイルの追跡開始
+  activate tailFile
+  loop until finish container
+    user -> dockerc : コマンド実行
+    dockerc -> dockerl : コンテナログ
+    tailFile -> dockerl : ログの取得
+    tailFile <-- dockerl : コンテナログ
+    main <- tailFile : コンテナログ
+    alt log data matched any msgPatterns
+      main -> gmsg : 表示メッセージの生成
+      activate gmsg
+      main <-- gmsg :表示メッセージ
+      deactivate gmsg
+      user <- main : メッセージの提示
+    end
+  end
+end
+
+group Container Deactivation
+  user-> docker : コンテナの停止
+  docker -> dockerc : コンテナの停止
+  deactivate dockerc
+  deactivate dockerl
+end
+
+@enduml
