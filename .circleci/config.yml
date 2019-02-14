@@ -11,9 +11,10 @@ jobs:
       - run: 
           name: go get
           command: |
-            go get -v -t -d ./...
             go get -u golang.org/x/lint/golint
             go get -u honnef.co/go/tools/cmd/...
+            go get -u github.com/golang/dep/cmd/dep
+            dep ensure
       - run:
           name: check by golint
           command: golint -set_exit_status=1

@@ -1,6 +1,6 @@
-tail-clog
 /*vendor*
 /log
 /output
 .containerid
+Gopkg.lock
 !.gitkeep
