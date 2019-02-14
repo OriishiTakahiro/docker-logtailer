@@ -1,10 +1,30 @@
 version: 2
 jobs:
-  build:
+  test:
     working_directory: /go/src/github.com/OriishiTakahiro/docker-logtailer
+    environment:
+      TZ: /usr/share/zoneinfo/Asia/Tokyo
     docker:
       - image: circleci/golang:1.11.4
     steps:
       - checkout
-      - run: go get -v -t -d ./...
-      - run: go test -v ./...
+      - run: 
+          name: go get
+          command: |
+            go get -v -t -d ./...
+            go get -u golang.org/x/lint/golint
+            go get -u honnef.co/go/tools/cmd/...
+      - run:
+          name: check by golint
+          command: golint -set_exit_status=1
+      - run:
+          name: staticehck
+          command: staticcheck -tests
+      - run:
+          name: go test
+          command: go test -v -cover ./...
+workflows:
+  version: 2
+  test_workflow:
+    jobs:
+      - test

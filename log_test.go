@@ -4,7 +4,7 @@ import (
 	"testing"
 )
 
-func parseLogTest(t *testing.T) {
+func TestParseLog(t *testing.T) {
 
 	sampleRow := Row{ID: 0, Message: "hogehoge", Fdesc: "stdout", Time: "2018-09-14"}
 

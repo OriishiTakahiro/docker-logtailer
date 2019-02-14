@@ -1,5 +1,6 @@
 tail-clog
 /*vendor*
 /log
+/output
 .containerid
 !.gitkeep
